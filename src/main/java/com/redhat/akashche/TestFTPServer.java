@@ -17,12 +17,16 @@
 package com.redhat.akashche;
 
 import org.apache.ftpserver.ConnectionConfigFactory;
+import org.apache.ftpserver.DataConnectionConfiguration;
 import org.apache.ftpserver.FtpServer;
 import org.apache.ftpserver.FtpServerFactory;
+import org.apache.ftpserver.impl.DefaultDataConnectionConfiguration;
+import org.apache.ftpserver.impl.PassivePorts;
 import org.apache.ftpserver.listener.ListenerFactory;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URI;
 
 /**
@@ -41,6 +45,13 @@ public class TestFTPServer {
         connectionConfigFactory.setAnonymousLoginEnabled(true);
         serverFactory.setConnectionConfig(connectionConfigFactory.createConnectionConfig());
         ListenerFactory factory = new ListenerFactory();
+        String activeLocalAddress = InetAddress.getLocalHost().getHostAddress();
+        DataConnectionConfiguration dcc = factory.getDataConnectionConfiguration();
+        DefaultDataConnectionConfiguration ndcc = new DefaultDataConnectionConfiguration(dcc.getIdleTime(),
+                dcc.getSslConfiguration(), dcc.isActiveEnabled(), dcc.isActiveIpCheck(), activeLocalAddress,
+                dcc.getActiveLocalPort(), dcc.getPassiveAddress(), new PassivePorts(dcc.getPassivePorts(), false),
+                dcc.getPassiveExernalAddress(), dcc.isImplicitSsl());
+        factory.setDataConnectionConfiguration(ndcc);
         BaseUser user = new BaseUser();
         user.setName("anonymous");
         File dir = codeSourceDir(TestFTPServer.class);
@@ -50,7 +61,7 @@ public class TestFTPServer {
         serverFactory.addListener("default", factory.createListener());
         FtpServer server = serverFactory.createServer();
         server.start();
-        System.out.println("Started HTTP server on port: [" + port + "]");
+        System.out.println("Started FTP server on port: [" + port + "]");
         for (;;) {
             Thread.sleep(30 * 1000);
             logHeartbeat();
